@@ -175,10 +175,10 @@ for (y in 1:numSimulations) {
   }
 }
 endTime <- Sys.time()
-timeTaken <- endTime - startTime
+timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
 
 #analysis----
 
-cat("\nTotal Execution Time: ", timeTaken, " seconds (", timeTaken/numSimulations, " seconds per run)", sep='')
-cat("\nExtirpation Percentage: ", (((length(yearsToElim))/numSimulations)*100), "%\n", sep='')
+cat("\nTotal Execution Time: ", timeTaken, " seconds (", round(timeTaken/numSimulations, digits=2), " seconds per run)", sep='')
+cat("\nExtirpation Percentage: ", (((length(yearsToElim))/numSimulations)*100), "% (", length(yearsToElim), " runs out of ", numSimulations, ")\n", sep='')
 if (is.null(yearsToElim) == FALSE) {cat("Of Extirpating Runs, Mean: ", (mean(yearsToElim)), " years, SD: ", (sd(yearsToElim)), ", Range: ", (range(yearsToElim)[1]), "-", (range(yearsToElim)[2]),  sep='')}
