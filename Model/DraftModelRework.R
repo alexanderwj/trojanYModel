@@ -19,10 +19,12 @@ yySurvival <- 1
 numFyy <- 1000
 numMyy <- 10000
 
-# Suppression is size-selective based on WNRD 2022 efforts
+# Suppression is size-selective based on WNRD 2022 efforts 
 # Suppression level = relative probability of a fish being suppressed at length l
 #   (for any length l, double the level = double the probability of suppression)
-# A level of 1 roughly corresponds to WNRD 2022 efforts (~500 removed at a pop. of ~80,000)
+# Suppression probability scales inverse to population 
+#   (1/2 the population = 2x the probability for each fish at the same level)
+# A level of 1 roughly corresponds to WNRD 2022 efforts (~500 removed)
 # Stocked fish cannot be suppressed
 suppressionLevel <- 1
 
