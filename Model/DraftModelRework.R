@@ -3,11 +3,11 @@
 # Simulation begins with age-2 fish, sex is randomly chosen
 # K is implemented using the Beverton-Holt recruitment model (K=(R0-1)*M))
 startingFish <- 500
-k <- 80000
+k <- 100000
 
 # Treatment years are when YY fish are stocked and suppression is applied, if applicable
 burnInYears <- 25
-treatmentYears <- 50
+treatmentYears <- 100
 afterYears <- 25
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
@@ -16,21 +16,21 @@ wildMortality <- 0.57873786895
 yySurvival <- 1
 
 # YY fish are stocked at age 1
-numFyy <- 2000
-numMyy <- 0
+numFyy <- 1000
+numMyy <- 10000
 
 # Suppression is size-selective based on WNRD 2022 efforts
 # Suppression level = relative probability of a fish being suppressed at length l
 #   (for any length l, double the level = double the probability of suppression)
 # A level of 1 roughly corresponds to WNRD 2022 efforts (~500 removed at a pop. of ~80,000)
 # Stocked fish cannot be suppressed
-suppressionLevel <- 5
+suppressionLevel <- 1
 
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females
 # You will get a report summarizing the results of all simulations
-numSimulations <- 5
-numPlots <- 5
+numSimulations <- 1
+numPlots <- 1
 
 #functions----
 
@@ -62,13 +62,13 @@ birth <- function(inds) {
   matureFyy <- nrow(subset(inds, mature == 1 & sex == 1 & yy == 1))
   matureMyy <- nrow(subset(inds, mature == 1 & sex == 0 & yy == 1))
   
-  totalPairs <- (min(c((matureFxx+matureFyy), (matureMxy+matureMyy))))
+  totalPairs <- matureFxx+matureFyy
   if (totalPairs == 0) {
     return(inds)
   }
   spawners <- totalPairs*2
   
-  newFish <- (((sqrt(k))*spawners)/(1+spawners/(sqrt(k))))/2+rnorm(1,0,k/10)
+  newFish <- (((sqrt(k)+1)*spawners)/(1+spawners/(sqrt(k))))/2+rnorm(1,0,k/10)
   if (newFish <= 0) {
      return(inds)
   }
@@ -118,10 +118,9 @@ stockYY <- function(inds){
 suppress <-function(inds) {
   lengths <- inds$length
   numFish <- length(lengths)
-  suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)*suppressionLevel*0.1877
+  suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)*suppressionLevel*0.1877*(1/(nrow(inds)/80000))
   suppressProb <- ifelse(suppressProb>1, 1, suppressProb)
-  inds$dead <- rbinom(numFish, 1, suppressProb)
-  inds$dead <- ifelse(inds$stocked==1, 0, inds$dead)
+  inds$dead <- ifelse(inds$stocked==1, 0, rbinom(numFish, 1, suppressProb))
   inds <- subset(inds, dead==0)
   inds
 }
@@ -180,5 +179,5 @@ timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
 #analysis----
 
 cat("\nTotal Execution Time: ", timeTaken, " seconds (", round(timeTaken/numSimulations, digits=2), " seconds per run)", sep='')
-cat("\nExtirpation Percentage: ", (((length(yearsToElim))/numSimulations)*100), "% (", length(yearsToElim), " runs out of ", numSimulations, ")\n", sep='')
+cat("\nExtirpation Percentage: ", (((length(yearsToElim))/numSimulations)*100), "% (", length(yearsToElim), "/", numSimulations, " runs)\n", sep='')
 if (is.null(yearsToElim) == FALSE) {cat("Of Extirpating Runs, Mean: ", (mean(yearsToElim)), " years, SD: ", (sd(yearsToElim)), ", Range: ", (range(yearsToElim)[1]), "-", (range(yearsToElim)[2]),  sep='')}
