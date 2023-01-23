@@ -16,8 +16,8 @@ wildMortality <- 0.57873786895
 yySurvival <- 1
 
 # YY fish are stocked at age 1
-numFyy <- 1000
-numMyy <- 10000
+numFyy <- 500
+numMyy <- 20000
 
 # Suppression is size-selective based on WNRD 2022 efforts 
 # Suppression level = relative probability of a fish being suppressed at length l
@@ -26,13 +26,13 @@ numMyy <- 10000
 #   (1/2 the population = 2x the probability for each fish at the same level)
 # A level of 1 roughly corresponds to WNRD 2022 efforts (~500 removed)
 # Stocked fish cannot be suppressed
-suppressionLevel <- 1
+suppressionLevel <- 5
 
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females
 # You will get a report summarizing the results of all simulations
-numSimulations <- 1
-numPlots <- 1
+numSimulations <- 5
+numPlots <- 5
 
 #functions----
 
@@ -53,7 +53,7 @@ growth <- function(inds) {
 
 death <- function(inds) {
   numFish <- length(inds$age)
-  inds$dead <- ifelse(inds$yy == 0, rbinom(numFish, 1, wildMortality), rbinom(numFish, 1, (1-((1-0.5701418464)*yySurvival))))
+  inds$dead <- ifelse(inds$yy == 0, rbinom(numFish, 1, wildMortality), rbinom(numFish, 1, (1-((1-wildMortality)*yySurvival))))
   inds <- subset(inds, dead==0)
   inds
 }
