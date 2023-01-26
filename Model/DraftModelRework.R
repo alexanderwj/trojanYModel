@@ -1,5 +1,14 @@
 #parameters----
 
+#maturity parameters
+lm50 <- 250
+lm95 <- 308
+
+#Von Bert parameters
+lInf <- 726.7
+rate <- .1437
+tZero <- -.04422
+
 # Simulation begins with age-2 fish, sex is randomly chosen
 # K is implemented using the Beverton-Holt recruitment model (K=(R0-1)*M))
 startingFish <- 500
@@ -16,7 +25,7 @@ wildMortality <- 0.57873786895
 yySurvival <- 1
 
 # YY fish are stocked at age 1
-numFyy <- 500
+numFyy <- 1000
 numMyy <- 20000
 
 # Suppression is size-selective based on WNRD 2022 efforts 
@@ -31,15 +40,15 @@ suppressionLevel <- 5
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females
 # You will get a report summarizing the results of all simulations
-numSimulations <- 5
-numPlots <- 5
+numSimulations <- 10
+numPlots <- 10
 
 #functions----
 
 maturity <- function(inds) {
   lengths <- inds$length
   numFish <- length(lengths)
-  probMature <- 1/(1+exp(log(19)*(lengths-250)/(250-308)))
+  probMature <- 1/(1+exp(log(19)*(lengths-lm50)/(lm50-lm95)))
   inds$mature<-rbinom(numFish, 1, probMature)
   inds
 }
@@ -47,7 +56,7 @@ maturity <- function(inds) {
 growth <- function(inds) {
   inds$age <- inds$age+1
   numFish <- length(inds$age)
-  inds$length <- ifelse(inds$age > 1, 726.7*(1-exp(-.1437*(inds$age+.04422)))+rnorm(numFish, 0, 40), 726.7*(1-exp(-.1437*(inds$age+.04422)))+rnorm(numFish, 0, 14))
+  inds$length <- ifelse(inds$age > 1, lInf*(1-exp(-rate*(inds$age-tZero)))+rnorm(numFish, 0, 40), lInf*(1-exp(-rate*(inds$age-tZero)))+rnorm(numFish, 0, 14))
   inds
 }
 
@@ -123,6 +132,8 @@ suppress <-function(inds) {
   suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)*suppressionLevel*0.1877*(1/(nrow(inds)/80000))
   suppressProb <- ifelse(suppressProb>1, 1, suppressProb)
   inds$dead <- ifelse(inds$stocked==1, 0, rbinom(numFish, 1, suppressProb))
+  #suppressed <- subset(inds, dead==1)
+  #print(nrow(suppressed))
   inds <- subset(inds, dead==0)
   inds
 }
