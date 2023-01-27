@@ -40,8 +40,8 @@ suppressionLevel <- 5
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females
 # You will get a report summarizing the results of all simulations
-numSimulations <- 10
-numPlots <- 10
+numSimulations <- 1
+numPlots <- 1
 
 #functions----
 
@@ -132,8 +132,6 @@ suppress <-function(inds) {
   suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)*suppressionLevel*0.1877*(1/(nrow(inds)/80000))
   suppressProb <- ifelse(suppressProb>1, 1, suppressProb)
   inds$dead <- ifelse(inds$stocked==1, 0, rbinom(numFish, 1, suppressProb))
-  #suppressed <- subset(inds, dead==1)
-  #print(nrow(suppressed))
   inds <- subset(inds, dead==0)
   inds
 }
@@ -191,6 +189,7 @@ timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
 
 #analysis----
 
+print(head(inds, 200))
 cat("\nTotal Execution Time: ", timeTaken, " seconds (", round(timeTaken/numSimulations, digits=2), " seconds per run)", sep='')
 cat("\nExtirpation Percentage: ", (((length(yearsToElim))/numSimulations)*100), "% (", length(yearsToElim), "/", numSimulations, " runs)\n", sep='')
 if (is.null(yearsToElim) == FALSE) {cat("Of Extirpating Runs, Mean: ", (mean(yearsToElim)), " years, SD: ", (sd(yearsToElim)), ", Range: ", (range(yearsToElim)[1]), "-", (range(yearsToElim)[2]),  sep='')}
