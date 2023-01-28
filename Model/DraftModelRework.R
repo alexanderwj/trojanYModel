@@ -12,7 +12,7 @@ tZero <- -.04422
 # Simulation begins with age-2 fish, sex is randomly chosen
 # K is implemented using the Beverton-Holt recruitment model (K=(R0-1)*M))
 startingFish <- 500
-k <- 100000
+k <- 10000
 
 # Treatment years are when YY fish are stocked and suppression is applied, if applicable
 burnInYears <- 25
@@ -25,8 +25,8 @@ wildMortality <- 0.57873786895
 yySurvival <- 1
 
 # YY fish are stocked at age 1
-numFyy <- 1000
-numMyy <- 20000
+numFyy <- 0
+numMyy <- 500
 
 # Suppression is size-selective based on WNRD 2022 efforts 
 # Suppression level = relative probability of a fish being suppressed at length l
@@ -35,13 +35,13 @@ numMyy <- 20000
 #   (1/2 the population = 2x the probability for each fish at the same level)
 # A level of 1 roughly corresponds to WNRD 2022 efforts (~500 removed)
 # Stocked fish cannot be suppressed
-suppressionLevel <- 5
+suppressionLevel <- 0
 
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females
 # You will get a report summarizing the results of all simulations
-numSimulations <- 1
-numPlots <- 1
+numSimulations <- 5
+numPlots <- 5
 
 #functions----
 
@@ -60,9 +60,9 @@ growth <- function(inds) {
   inds
 }
 
-death <- function(inds) {
+death <- function(inds, survival) {
   numFish <- length(inds$age)
-  inds$dead <- ifelse(inds$yy == 0, rbinom(numFish, 1, wildMortality), rbinom(numFish, 1, (1-((1-wildMortality)*yySurvival))))
+  inds$dead <- ifelse(inds$yy == 0, rbinom(numFish, 1, wildMortality), rbinom(numFish, 1, (1-((1-wildMortality)*survival))))
   inds <- subset(inds, dead==0)
   inds
 }
@@ -120,76 +120,89 @@ birth <- function(inds) {
   inds
 }
 
-stockYY <- function(inds){
-  if (numMyy > 0) {new_Myy <- data.frame(age=rep(1, numMyy), sex=rep(0, numMyy), length=rep(0, numMyy), mature=rep(0, numMyy), dead=rep(0, numMyy), yy=rep(1, numMyy), stocked=rep(1,numMyy)); inds <- rbind(inds, new_Myy)}
-  if (numFyy > 0) {new_Fyy <- data.frame(age=rep(1, numFyy), sex=rep(1, numFyy), length=rep(0, numFyy), mature=rep(0, numFyy), dead=rep(0, numFyy), yy=rep(1, numFyy), stocked=rep(1,numFyy)); inds <- rbind(inds, new_Fyy)}
+stockYY <- function(inds,Myy,Fyy){
+  if (numMyy > 0) {new_Myy <- data.frame(age=rep(1, Myy), sex=rep(0, Myy), length=rep(0, Myy), mature=rep(0, Myy), dead=rep(0, Myy), yy=rep(1, Myy), stocked=rep(1,Myy)); inds <- rbind(inds, new_Myy)}
+  if (numFyy > 0) {new_Fyy <- data.frame(age=rep(1, Fyy), sex=rep(1, Fyy), length=rep(0, Fyy), mature=rep(0, Fyy), dead=rep(0, Fyy), yy=rep(1, Fyy), stocked=rep(1,Fyy)); inds <- rbind(inds, new_Fyy)}
   inds
 }
 
-suppress <-function(inds) {
+suppress <-function(inds,suppression) {
   lengths <- inds$length
   numFish <- length(lengths)
-  suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)*suppressionLevel*0.1877*(1/(nrow(inds)/80000))
+  suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)*suppression*0.1877*(1/(nrow(inds)/80000))
   suppressProb <- ifelse(suppressProb>1, 1, suppressProb)
   inds$dead <- ifelse(inds$stocked==1, 0, rbinom(numFish, 1, suppressProb))
   inds <- subset(inds, dead==0)
   inds
 }
 
+simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
+  startTime <- Sys.time()
+
+  plotYears <- sample.int(numSimulations, plots)
+  cat("\nSimulation runs to be plotted:", sort(plotYears), "\n")
+  results <- data.frame(matrix(ncol=3,nrow=0, dimnames=list(NULL, c("Eliminated", "Years", "Min. Females"))))
+  
+  for (y in 1:simulations) {
+    inds <- data.frame(age=rep(2, startingFish), sex=rbinom(startingFish,1,0.5), length=rep(0,startingFish), mature=rep(0,startingFish), dead=rep(0,startingFish), yy=rep(0,startingFish), stocked=rep(0,startingFish))
+    eliminationYear <- 0
+    Population <- c(startingFish)
+    numFxx <- nrow(subset(inds, sex == 1 & yy == 0))
+    
+    for (year in 1:(burnInYears+treatmentYears+afterYears)) {
+      if (year > burnInYears && year <= (burnInYears+treatmentYears)) {
+        if (suppressionLevel>0) {inds <- suppress(inds,suppression)}
+        inds <- stockYY(inds,Myy,Fyy)
+      }
+      
+      if (nrow(subset(inds, sex == 1 & yy == 0)) == 0) {
+        yearResults <- data.frame(Eliminated=1,Years=year-burnInYears,MinFemales=0)
+        results <- rbind(results, yearResults)
+        Population <- append(Population, nrow(inds))
+        numFxx <- append(numFxx, 0)
+        eliminationYear <- year
+        break
+      }
+      
+      inds <- death(inds,survival)
+      inds <- growth(inds)
+      inds <- maturity(inds)
+      inds <- birth(inds)
+      
+      Population <- append(Population, nrow(inds))
+      numFxx <- append(numFxx, nrow(subset(inds, sex == 1 & yy == 0)))
+    }
+    
+    Year <- 0:(burnInYears+treatmentYears+afterYears)
+    Year <- (head(Year,(length(Population))))
+    numFxx <- (head(numFxx,(length(Population))))
+    if(eliminationYear == 0) {yearResults <- data.frame(Eliminated=0,Years=NA,MinFemales=min(tail(numFxx,(treatmentYears+afterYears)))); results <- rbind(results, yearResults)}
+    
+    if (is.element(y, plotYears)) {
+      plot(Year, Population, type='l', main=(ifelse(eliminationYear == 0, (paste("Run", y, "- Not Extirpated. Min. Females:", min(tail(numFxx,(treatmentYears+afterYears))))), (paste("Run", y, "-", (eliminationYear-burnInYears), "years to extirpation")))), ylim=c(0,max(Population)))
+      lines(Year, numFxx, type='l', col="red")
+      abline(v=burnInYears, col="red")
+      abline(v=burnInYears+treatmentYears, col="red")
+    }
+  }
+  endTime <- Sys.time()
+  timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
+  cat("\nTotal Execution Time: ", timeTaken, " seconds (", round(timeTaken/numSimulations, digits=2), " seconds per run)\n", sep='')
+  results
+}
+
 #simulation----
 
-plotYears <- sample.int(numSimulations, numPlots)
-cat("\nSimulation runs to be plotted:", sort(plotYears), "\n")
+#startTime <- Sys.time()
 
-yearsToElim <- c()
-startTime <- Sys.time()
+#results <- simulate(k,numMyy,numFyy,suppressionLevel,numSimulations,numPlots)
+#print(results)
 
-for (y in 1:numSimulations) {
-  inds <- data.frame(age=rep(2, startingFish), sex=rbinom(startingFish,1,0.5), length=rep(0,startingFish), mature=rep(0,startingFish), dead=rep(0,startingFish), yy=rep(0,startingFish), stocked=rep(0,startingFish))
-  eliminationYear <- 0
-  Population <- c(startingFish)
-  numFxx <- nrow(subset(inds, sex == 1 & yy == 0))
-  
-  for (year in 1:(burnInYears+treatmentYears+afterYears)) {
-    if (year > burnInYears && year <= (burnInYears+treatmentYears)) {
-      if (suppressionLevel>0) {inds <- suppress(inds)}
-      inds <- stockYY(inds)
-    }
-    
-    if (nrow(subset(inds, sex == 1 & yy == 0)) == 0) {
-      Population <- append(Population, nrow(inds))
-      numFxx <- append(numFxx, 0)
-      eliminationYear <- year
-      break
-    }
-    
-    inds <- death(inds)
-    inds <- growth(inds)
-    inds <- maturity(inds)
-    inds <- birth(inds)
-    
-    Population <- append(Population, nrow(inds))
-    numFxx <- append(numFxx, nrow(subset(inds, sex == 1 & yy == 0)))
-  }
-  
-  Year <- 0:(burnInYears+treatmentYears+afterYears)
-  Year <- (head(Year,(length(Population))))
-  numFxx <- (head(numFxx,(length(Population))))
-  if(eliminationYear != 0) {yearsToElim <- append(yearsToElim, eliminationYear-burnInYears)}
-  
-  if (is.element(y, plotYears)) {
-    plot(Year, Population, type='l', main=(ifelse(eliminationYear == 0, (paste("Run", y, "- Not Extirpated. Min. Females:", min(tail(numFxx,(treatmentYears+afterYears))))), (paste("Run", y, "-", (eliminationYear-burnInYears), "years to extirpation")))), ylim=c(0,max(Population)))
-    lines(Year, numFxx, type='l', col="red")
-    abline(v=burnInYears, col="red")
-    abline(v=burnInYears+treatmentYears, col="red")
-  }
-}
-endTime <- Sys.time()
-timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
+#endTime <- Sys.time()
+#timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
 
 #analysis----
 
-print(head(inds, 200))
-cat("\nTotal Execution Time: ", timeTaken, " seconds (", round(timeTaken/numSimulations, digits=2), " seconds per run)", sep='')
-cat("\nExtirpation Percentage: ", (((length(yearsToElim))/numSimulations)*100), "% (", length(yearsToElim), "/", numSimulations, " runs)\n", sep='')
-if (is.null(yearsToElim) == FALSE) {cat("Of Extirpating Runs, Mean: ", (mean(yearsToElim)), " years, SD: ", (sd(yearsToElim)), ", Range: ", (range(yearsToElim)[1]), "-", (range(yearsToElim)[2]),  sep='')}
+#cat("\nTotal Execution Time: ", timeTaken, " seconds (", round(timeTaken/numSimulations, digits=2), " seconds per run)", sep='')
+#cat("\nExtirpation Percentage: ", (((length(yearsToElim))/numSimulations)*100), "% (", length(yearsToElim), "/", numSimulations, " runs)\n", sep='')
+#if (is.null(yearsToElim) == FALSE) {cat("Of Extirpating Runs, Mean: ", (mean(yearsToElim)), " years, SD: ", (sd(yearsToElim)), ", Range: ", (range(yearsToElim)[1]), "-", (range(yearsToElim)[2]),  sep='')}
