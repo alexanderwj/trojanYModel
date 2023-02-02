@@ -8,7 +8,7 @@ k <- 2000
 
 #YY fish are stocked at age 1 during the summer field season
 numFyy <- 0
-numMyy <- 75
+numMyy <- 0
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
 #   (1=equivalent survival rate to wild fish)
@@ -27,17 +27,17 @@ suppressionLevel <- 0
 # On the plots, black line = total population, red line = wild-type females
 # You will get a report summarizing the results of all simulations
 numSimulations <- 1
-numPlots <- 1
+numPlots <- 0
 
 #simulation----
 
-#results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
-survivals <- seq(0,1,0.05)
+results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
+MyyLevels <- seq(0,100,10)
 startTime <- Sys.time()
 
-for (i in seq(1,10)) {
-  for (level in survivals) {
-    results <- rbind(results,simulate(k,numMyy,numFyy,level,suppressionLevel,numSimulations,numPlots))
+for(i in seq(1,5)) {
+  for (MyyLevel in MyyLevels) {
+    results <- rbind(results,simulate(k,MyyLevel,100-MyyLevel,yyFitness,suppressionLevel,numSimulations,1))
   }
 }
 
@@ -46,4 +46,4 @@ timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
 
 print(results)
 cat("\nTotal Execution Time: ", timeTaken, " seconds", sep='')
-print(ggplot(results,aes(x=YYSurvival,y=MinFemales,group=YYSurvival))+geom_boxplot())
+print(ggplot(results,aes(x=Fyy/100,y=Years,group=Fyy/100))+geom_boxplot())

@@ -98,8 +98,8 @@ birth <- function(inds) {
 }
 
 stockYY <- function(inds,Myy,Fyy){
-  if (numMyy > 0) {new_Myy <- data.frame(age=rep(1, Myy), sex=rep(0, Myy), length=rep(0, Myy), mature=rep(0, Myy), dead=rep(0, Myy), yy=rep(1, Myy), stocked=rep(1,Myy)); inds <- rbind(inds, new_Myy)}
-  if (numFyy > 0) {new_Fyy <- data.frame(age=rep(1, Fyy), sex=rep(1, Fyy), length=rep(0, Fyy), mature=rep(0, Fyy), dead=rep(0, Fyy), yy=rep(1, Fyy), stocked=rep(1,Fyy)); inds <- rbind(inds, new_Fyy)}
+  if (Myy > 0) {new_Myy <- data.frame(age=rep(1, Myy), sex=rep(0, Myy), length=rep(0, Myy), mature=rep(0, Myy), dead=rep(0, Myy), yy=rep(1, Myy), stocked=rep(1,Myy)); inds <- rbind(inds, new_Myy)}
+  if (Fyy > 0) {new_Fyy <- data.frame(age=rep(1, Fyy), sex=rep(1, Fyy), length=rep(0, Fyy), mature=rep(0, Fyy), dead=rep(0, Fyy), yy=rep(1, Fyy), stocked=rep(1,Fyy)); inds <- rbind(inds, new_Fyy)}
   inds
 }
 
@@ -123,7 +123,7 @@ simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
   for (y in 1:simulations) {
     inds <- data.frame(age=rep(2, startingFish), sex=rbinom(startingFish,1,0.5), length=rep(0,startingFish), mature=rep(0,startingFish), dead=rep(0,startingFish), yy=rep(0,startingFish), stocked=rep(0,startingFish))
     eliminationYear <- 0
-    if (is.element(y, plotYears)) {Population <- c(startingFish)}
+    Population <- c(startingFish)
     numFxx <- nrow(subset(inds, sex == 1 & yy == 0))
     
     for (year in 1:(burnInYears+treatmentYears+afterYears)) {
@@ -135,7 +135,7 @@ simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
       if (nrow(subset(inds, sex == 1 & yy == 0)) == 0) {
         yearResults <- data.frame(K=k,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=1,Years=year-burnInYears,MinFemales=0)
         results <- rbind(results, yearResults)
-        if (is.element(y, plotYears)) {Population <- append(Population, nrow(inds))}
+        Population <- append(Population, nrow(inds))
         numFxx <- append(numFxx, 0)
         eliminationYear <- year
         break
@@ -146,7 +146,7 @@ simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
       inds <- maturity(inds)
       inds <- birth(inds)
       
-      if (is.element(y, plotYears)) {Population <- append(Population, nrow(inds))}
+      Population <- append(Population, nrow(inds))
       numFxx <- append(numFxx, nrow(subset(inds, sex == 1 & yy == 0)))
     }
     
