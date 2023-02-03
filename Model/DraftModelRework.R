@@ -73,33 +73,33 @@ birth <- function(inds) {
   recruitsBothyy <- round((newFish*(pairsBothyy/totalPairs)), 0)
   recruitsFxxMyy <- round((newFish*(pairsFxxMyy/totalPairs)), 0)
   recruitsFyyMxy <- round((newFish*(pairsFyyMxy/totalPairs)), 0)
-  recruitsWild <- (newFish-recruitsBothyy-recruitsFxxMyy-recruitsFyyMxy)
+  recruitsWild <- round((newFish-recruitsBothyy-recruitsFxxMyy-recruitsFyyMxy), 0)
 
   if(recruitsBothyy > 0) {
-    newFish_Bothyy <- data.frame(age=rep(0, recruitsBothyy), sex=rep(0, recruitsBothyy), length=rep(0, recruitsBothyy), mature=rep(0,recruitsBothyy), dead=rep(0, recruitsBothyy), yy=rep(1, recruitsBothyy), stocked=rep(0, recruitsBothyy))
+    newFish_Bothyy <- data.frame(age=rep(0, recruitsBothyy), sex=0, length=0, mature=0, dead=0, yy=1, stocked=0)
     inds <- rbind(inds, newFish_Bothyy);
   }
 
   if(recruitsFxxMyy > 0) {
-    newFish_FxxMyy <- data.frame(age=rep(0, recruitsFxxMyy), sex=rep(0, recruitsFxxMyy), length=rep(0, recruitsFxxMyy), mature=rep(0, recruitsFxxMyy), dead=rep(0, recruitsFxxMyy), yy=rep(0, recruitsFxxMyy), stocked=rep(0, recruitsFxxMyy))
+    newFish_FxxMyy <- data.frame(age=rep(0, recruitsFxxMyy), sex=0, length=0, mature=0, dead=0, yy=0, stocked=0)
     inds <- rbind(inds, newFish_FxxMyy);
   }
 
   if(recruitsFyyMxy > 0) {
-    newFish_FyyMxy <- data.frame(age=rep(0, recruitsFyyMxy), sex=rep(0, recruitsFyyMxy), length=rep(0, recruitsFyyMxy), mature=rep(0, recruitsFyyMxy), dead=rep(0, recruitsFyyMxy), yy=rbinom(recruitsFyyMxy, 1, 0.5), stocked=rep(0, recruitsFyyMxy))
+    newFish_FyyMxy <- data.frame(age=rep(0, recruitsFyyMxy), sex=0, length=0, mature=0, dead=0, yy=rbinom(recruitsFyyMxy, 1, 0.5), stocked=0)
     inds <- rbind(inds, newFish_FyyMxy);
   }
 
   if(recruitsWild > 0) {
-    newFish_Wild<- data.frame(age=rep(0, recruitsWild), sex=rbinom(recruitsWild, 1, 0.5), length=rep(0, recruitsWild), mature=rep(0, recruitsWild), dead=rep(0, recruitsWild), yy=rep(0, recruitsWild), stocked=rep(0, recruitsWild))
+    newFish_Wild<- data.frame(age=rep(0, recruitsWild), sex=rbinom(recruitsWild, 1, 0.5), length=0, mature=0, dead=0, yy=0, stocked=0)
     inds <- rbind(inds, newFish_Wild);
   }
   inds
 }
 
 stockYY <- function(inds,Myy,Fyy){
-  if (Myy > 0) {new_Myy <- data.frame(age=rep(1, Myy), sex=rep(0, Myy), length=rep(0, Myy), mature=rep(0, Myy), dead=rep(0, Myy), yy=rep(1, Myy), stocked=rep(1,Myy)); inds <- rbind(inds, new_Myy)}
-  if (Fyy > 0) {new_Fyy <- data.frame(age=rep(1, Fyy), sex=rep(1, Fyy), length=rep(0, Fyy), mature=rep(0, Fyy), dead=rep(0, Fyy), yy=rep(1, Fyy), stocked=rep(1,Fyy)); inds <- rbind(inds, new_Fyy)}
+  if (Myy > 0) {new_Myy <- data.frame(age=rep(1, Myy), sex=0, length=0, mature=0, dead=0, yy=1, stocked=1); inds <- rbind(inds, new_Myy)}
+  if (Fyy > 0) {new_Fyy <- data.frame(age=rep(1, Fyy), sex=1, length=0, mature=0, dead=0, yy=1, stocked=1); inds <- rbind(inds, new_Fyy)}
   inds
 }
 
@@ -121,7 +121,7 @@ simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
   results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
   
   for (y in 1:simulations) {
-    inds <- data.frame(age=rep(2, startingFish), sex=rbinom(startingFish,1,0.5), length=rep(0,startingFish), mature=rep(0,startingFish), dead=rep(0,startingFish), yy=rep(0,startingFish), stocked=rep(0,startingFish))
+    inds <- data.frame(age=rep(2, startingFish), sex=rbinom(startingFish,1,0.5), length=0, mature=0, dead=0, yy=0, stocked=0)
     eliminationYear <- 0
     Population <- c(startingFish)
     numFxx <- nrow(subset(inds, sex == 1 & yy == 0))

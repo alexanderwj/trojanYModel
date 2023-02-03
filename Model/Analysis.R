@@ -4,7 +4,7 @@ source("DraftModelRework.R")
 #parameters----
 
 # K is implemented using the Beverton-Holt recruitment model (K=(R0-1)*M))
-k <- 2000
+k <- 5000
 
 #YY fish are stocked at age 1 during the summer field season
 numFyy <- 0
@@ -32,12 +32,12 @@ numPlots <- 0
 #simulation----
 
 results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
-MyyLevels <- seq(0,100,10)
+MyyLevels <- seq(0,1000,100)
 startTime <- Sys.time()
 
-for(i in seq(1,5)) {
+for(i in seq(1,10)) {
   for (MyyLevel in MyyLevels) {
-    results <- rbind(results,simulate(k,MyyLevel,100-MyyLevel,yyFitness,suppressionLevel,numSimulations,1))
+    results <- rbind(results,simulate(k,MyyLevel,1000-MyyLevel,yyFitness,suppressionLevel,numSimulations,1))
   }
 }
 
@@ -46,4 +46,4 @@ timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
 
 print(results)
 cat("\nTotal Execution Time: ", timeTaken, " seconds", sep='')
-print(ggplot(results,aes(x=Fyy/100,y=Years,group=Fyy/100))+geom_boxplot())
+print(ggplot(results,aes(x=Fyy/1000,y=Years,group=Fyy/1000))+xlab("Proportion Fyy")+ylab("Years to Extirpation")+geom_boxplot())
