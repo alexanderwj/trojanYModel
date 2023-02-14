@@ -1,10 +1,10 @@
 #parameters----
 
-#maturity parameters
+#maturity parameters: these are from McCormick et al. 2021 for common carp
 lm50 <- 250
 lm95 <- 308
 
-#Von Bert parameters
+#Von Bert parameters: these are from aged scales collected by WNRD in 2019 and 2022
 lInf <- 726.7
 rate <- .1437
 tZero <- -.04422
@@ -16,7 +16,7 @@ wildMortality <- 0.57873786895
 startingFish <- 500
 
 # Treatment years are when YY fish are stocked and suppression is applied, if applicable
-burnInYears <- 25
+burnInYears <- 50
 treatmentYears <- 100
 afterYears <- 25
 
@@ -44,7 +44,7 @@ death <- function(inds, survival) {
   inds
 }
 
-birth <- function(inds) {
+birth <- function(inds,K) {
   matureFxx <- nrow(subset(inds, mature == 1 & sex == 1 & yy == 0))
   matureMxy <- nrow(subset(inds, mature == 1 & sex == 0 & yy == 0))
   matureFyy <- nrow(subset(inds, mature == 1 & sex == 1 & yy == 1))
@@ -54,21 +54,20 @@ birth <- function(inds) {
   if (totalPairs == 0) {
     return(inds)
   }
-  spawners <- totalPairs*2
+  spawners <- matureFxx+matureFyy+matureMxy+matureMyy
   
-  newFish <- (((sqrt(k)+1)*spawners)/(1+spawners/(sqrt(k))))/2+rnorm(1,0,k/10)
+  newFish <- (((sqrt(K)+1)*spawners)/(1+spawners/(sqrt(K))))/2+rnorm(1,0,K/10)
   if (newFish <= 0) {
      return(inds)
   }
   
   percMyy <- ifelse((matureMyy+matureMxy)==0,0,matureMyy/(matureMyy+matureMxy))
   percFyy <- ifelse((matureFyy+matureFxx)==0,0,matureFyy/(matureFyy+matureFxx))
-  percBothyy <- percMyy*percFyy
   
-  pairsBothyy <- rbinom(1,totalPairs,percBothyy)
-  pairsFxxMyy <- rbinom(1,(totalPairs-pairsBothyy),percMyy)
-  pairsFyyMxy <- rbinom(1,(totalPairs-pairsBothyy-pairsFxxMyy),percFyy)
-  pairsWild <- (totalPairs-pairsBothyy-pairsFxxMyy-pairsFyyMxy)
+  pairsBothyy <- rbinom(1,totalPairs,percMyy*percFyy)
+  pairsWild <- rbinom(1,totalPairs,(1-percFyy)*(1-percMyy))
+  pairsFxxMyy <- rbinom(1,(totalPairs-pairsBothyy-pairsWild),(percMyy))
+  pairsFyyMxy <- (totalPairs-pairsBothyy-pairsFxxMyy-pairsWild)
 
   recruitsBothyy <- round((newFish*(pairsBothyy/totalPairs)), 0)
   recruitsFxxMyy <- round((newFish*(pairsFxxMyy/totalPairs)), 0)
@@ -115,9 +114,8 @@ suppress <-function(inds,suppression) {
 
 #simulation function----
 
-simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
-  plotYears <- sample.int(numSimulations, plots)
-  #cat("\nSimulation runs to be plotted:", sort(plotYears), "\n")
+simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
+  plotYears <- sample.int(simulations, plots)
   results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
   
   for (y in 1:simulations) {
@@ -128,12 +126,12 @@ simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
     
     for (year in 1:(burnInYears+treatmentYears+afterYears)) {
       if (year > burnInYears && year <= (burnInYears+treatmentYears)) {
-        if (suppressionLevel>0) {inds <- suppress(inds,suppression)}
+        if (suppression>0) {inds <- suppress(inds,suppression)}
         inds <- stockYY(inds,Myy,Fyy)
       }
       
       if (nrow(subset(inds, sex == 1 & yy == 0)) == 0) {
-        yearResults <- data.frame(K=k,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=1,Years=year-burnInYears,MinFemales=0)
+        yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=1,Years=year-burnInYears,MinFemales=0)
         results <- rbind(results, yearResults)
         Population <- append(Population, nrow(inds))
         numFxx <- append(numFxx, 0)
@@ -144,7 +142,7 @@ simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
       inds <- death(inds,survival)
       inds <- growth(inds)
       inds <- maturity(inds)
-      inds <- birth(inds)
+      inds <- birth(inds,K)
       
       Population <- append(Population, nrow(inds))
       numFxx <- append(numFxx, nrow(subset(inds, sex == 1 & yy == 0)))
@@ -153,7 +151,7 @@ simulate <- function(k,Myy,Fyy,survival,suppression,simulations,plots) {
     Year <- 0:(burnInYears+treatmentYears+afterYears)
     Year <- (head(Year,(length(Population))))
     numFxx <- (head(numFxx,(length(Population))))
-    if(eliminationYear == 0) {yearResults <- data.frame(K=k,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=0,Years=NA,MinFemales=min(tail(numFxx,(treatmentYears+afterYears)))); results <- rbind(results, yearResults)}
+    if(eliminationYear == 0) {yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=0,Years=NA,MinFemales=min(tail(numFxx,(treatmentYears+afterYears)))); results <- rbind(results, yearResults)}
     
     if (is.element(y, plotYears)) {
       plot(Year, Population, type='l', main=(ifelse(eliminationYear == 0, (paste("Run", y, "- Not Extirpated. Min. Females:", min(tail(numFxx,(treatmentYears+afterYears))))), (paste("Run", y, "-", (eliminationYear-burnInYears), "years to extirpation")))), ylim=c(0,max(Population)))

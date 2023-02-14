@@ -4,7 +4,7 @@ source("DraftModelRework.R")
 #parameters----
 
 # K is implemented using the Beverton-Holt recruitment model (K=(R0-1)*M))
-k <- 5000
+K <- 10000
 
 #YY fish are stocked at age 1 during the summer field season
 numFyy <- 0
@@ -12,7 +12,7 @@ numMyy <- 0
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
 #   (1=equivalent survival rate to wild fish)
-yySurvival <- 1
+yyRelSurvival <- 1
 
 # Suppression is size-selective based on WNRD 2022 efforts 
 # Suppression level = relative probability of a fish being suppressed at length l
@@ -32,12 +32,12 @@ numPlots <- 0
 #simulation----
 
 results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
-MyyLevels <- seq(0,1000,100)
+yyLevels <- seq(500,5000,500)
 startTime <- Sys.time()
 
 for(i in seq(1,10)) {
-  for (MyyLevel in MyyLevels) {
-    results <- rbind(results,simulate(k,MyyLevel,1000-MyyLevel,yyFitness,suppressionLevel,numSimulations,1))
+  for (yyLevel in yyLevels) {
+    results <- rbind(results,simulate(K,yyLevel/2,yyLevel/2,yyRelSurvival,suppressionLevel,numSimulations,1))
   }
 }
 
@@ -46,4 +46,4 @@ timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
 
 print(results)
 cat("\nTotal Execution Time: ", timeTaken, " seconds", sep='')
-print(ggplot(results,aes(x=Fyy/1000,y=Years,group=Fyy/1000))+xlab("Proportion Fyy")+ylab("Years to Extirpation")+geom_boxplot())
+print(ggplot(results,aes(x=Myy*2,y=Years,group=Myy*2))+xlab("Number of YY Fish Stocked per Year")+ylab("Years to Extirpation")+geom_boxplot())
