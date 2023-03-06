@@ -13,7 +13,7 @@ tZero <- -.04422
 wildMortality <- 0.57873786895
 
 # Simulation begins with age-2 fish, sex is randomly chosen
-startingFish <- 500
+startingFish <- 1000
 
 # Treatment years are when YY fish are stocked and suppression is applied, if applicable
 burnInYears <- 50
@@ -55,8 +55,7 @@ birth <- function(inds,K) {
     return(inds)
   }
   spawners <- matureFxx+matureFyy+matureMxy+matureMyy
-  
-  newFish <- (((sqrt(K)+1)*spawners)/(1+spawners/(sqrt(K))))/2+rnorm(1,0,K/10)
+  newFish <- ((20*K*spawners)/(K+(19*spawners)))+rnorm(1,0,K/10)
   if (newFish <= 0) {
      return(inds)
   }
@@ -105,9 +104,12 @@ stockYY <- function(inds,Myy,Fyy){
 suppress <-function(inds,suppression) {
   lengths <- inds$length
   numFish <- length(lengths)
-  suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)*suppression*0.1877*(1/(nrow(inds)/80000))
+  suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)
   suppressProb <- ifelse(suppressProb>1, 1, suppressProb)
+  suppressProb <- suppressProb*suppression
   inds$dead <- ifelse(inds$stocked==1, 0, rbinom(numFish, 1, suppressProb))
+  #suppressed <- subset(inds, dead==1)
+  #print(nrow(suppressed))
   inds <- subset(inds, dead==0)
   inds
 }
@@ -138,7 +140,7 @@ simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
         eliminationYear <- year
         break
       }
-      
+  
       inds <- death(inds,survival)
       inds <- growth(inds)
       inds <- maturity(inds)
