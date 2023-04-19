@@ -1,49 +1,37 @@
 library(ggplot2)
+library(dplyr)
 source("DraftModelRework.R")
 
 #parameters----
 
-# K is implemented using the Beverton-Holt recruitment model (K=(R0-1)*M))
-K <- 50000
+# K is implemented using the Beverton-Holt difference equation ()
+K <- 10000
 
-#YY fish are stocked at age 1 during the summer field season
-numFyy <- 0
-numMyy <- 0
+#YY fish are stocked annually at age 1 during the summer field season
+numMyy <- 350
+numFyy <- 350
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
 #   (1=equivalent survival rate to wild fish)
 yyRelSurvival <- 1
 
-# Suppression is size-selective based on WNRD 2022 efforts 
-# Suppression level = relative probability of a fish being suppressed at length l
-#   (for any length l, double the level = double the probability of suppression)
-# Suppression probability scales inverse to population 
-#   (1/2 the population = 2x the probability for each fish at the same level)
-# A level of 1 roughly corresponds to WNRD 2022 efforts (~500 removed)
+# Suppression is size-selective based on WNRD 2022 efforts
+# Level is a multiplier of the selectivity function 
+#   (Level of 1 means the most-selected lengths have a 100% chance of being suppressed)
 # Stocked fish cannot be suppressed
 suppressionLevel <- 1
 
 # Choose how many simulations will be run and how many will be plotted
-# On the plots, black line = total population, red line = wild-type females
-# You will get a report summarizing the results of all simulations
-numSimulations <- 1
-numPlots <- 0
+# On the plots, black line = total population, red line = wild-type females,
+#   verticals red lines = management actions start/stop
+numSimulations <- 10
+numPlots <- 10
 
 #simulation----
 
-results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
-suppressedLevels <- seq(0,1,0.2)
-startTime <- Sys.time()
+#FUNCTION CALL: simulate(Carrying Capacity, Number Myy, Number Fyy, YY Relative Survival Rate,
+#                        Suppression Level, Number of Simulations, Number of Plots)
 
-for(i in seq(1,5)) {
-  for (suppressLevel in suppressedLevels) {
-    results <- rbind(results,simulate(K,10000,2500,yyRelSurvival,suppressLevel,numSimulations,1))
-  }
-}
+#results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
 
-endTime <- Sys.time()
-timeTaken <- round(difftime(endTime, startTime, units='secs'), digits=2)
-
-print(results)
-cat("\nTotal Execution Time: ", timeTaken, " seconds", sep='')
-print(ggplot(results,aes(x=SuppressionLevel,y=Years,group=SuppressionLevel))+xlab("Suppression Level")+ylab("Years to Extirpation")+geom_boxplot())
+print(simulate(K,numMyy,numFyy,yyRelSurvival,suppressionLevel,numSimulations,numPlots))

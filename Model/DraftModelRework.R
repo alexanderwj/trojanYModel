@@ -9,7 +9,7 @@ lInf <- 726.7
 rate <- .1437
 tZero <- -.04422
 
-#annual mortality rate A
+#annual mortality rate A for wild fish: calculated using catch-curve analysis of WNRD snorkel surveys
 wildMortality <- 0.57873786895
 
 # Simulation begins with age-2 fish, sex is randomly chosen
@@ -101,15 +101,13 @@ stockYY <- function(inds,Myy,Fyy){
   inds
 }
 
-suppress <-function(inds,suppression) {
+suppress <-function(inds,rate) {
   lengths <- inds$length
   numFish <- length(lengths)
   suppressProb <-  (0.00008526*1.025^(.8753*(lengths))+.01753)
   suppressProb <- ifelse(suppressProb>1, 1, suppressProb)
-  suppressProb <- suppressProb*suppression
+  suppressProb <- suppressProb*rate
   inds$dead <- ifelse(inds$stocked==1, 0, rbinom(numFish, 1, suppressProb))
-  #suppressed <- subset(inds, dead==1)
-  #print(nrow(suppressed))
   inds <- subset(inds, dead==0)
   inds
 }
