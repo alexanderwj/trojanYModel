@@ -54,7 +54,7 @@ birth <- function(inds,K) {
   if (totalPairs == 0) {
     return(inds)
   }
-  spawners <- matureFxx+matureFyy+matureMxy+matureMyy
+  spawners <- totalPairs*2
   newFish <- ((20*K*spawners)/(K+(19*spawners)))+rnorm(1,0,K/10)
   if (newFish <= 0) {
      return(inds)

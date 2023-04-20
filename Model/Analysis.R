@@ -24,8 +24,8 @@ suppressionLevel <- 1
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females,
 #   verticals red lines = management actions start/stop
-numSimulations <- 10
-numPlots <- 10
+numSimulations <- 5
+numPlots <- 5
 
 #simulation----
 
