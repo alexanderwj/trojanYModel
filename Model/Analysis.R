@@ -9,7 +9,7 @@ K <- 10000
 
 #YY fish are stocked annually at age 1 during the summer field season
 numMyy <- 350
-numFyy <- 350
+numFyy <- 0
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
 #   (1=equivalent survival rate to wild fish)
@@ -19,13 +19,13 @@ yyRelSurvival <- 1
 # Level is a multiplier of the selectivity function 
 #   (Level of 1 means the most-selected lengths have a 100% chance of being suppressed)
 # Stocked fish cannot be suppressed
-suppressionLevel <- 1
+suppressionLevel <- 0
 
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females,
 #   verticals red lines = management actions start/stop
-numSimulations <- 5
-numPlots <- 5
+numSimulations <- 1
+numPlots <- 1
 
 #simulation----
 

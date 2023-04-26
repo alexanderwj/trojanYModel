@@ -55,7 +55,7 @@ birth <- function(inds,K) {
     return(inds)
   }
   spawners <- totalPairs*2
-  newFish <- ((20*K*spawners)/(K+(19*spawners)))+rnorm(1,0,K/10)
+  newFish <- ((20*K*spawners)/(K+(19*spawners)))*exp(rnorm(1,0,0.25))
   if (newFish <= 0) {
      return(inds)
   }
@@ -125,10 +125,6 @@ simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
     numFxx <- nrow(subset(inds, sex == 1 & yy == 0))
     
     for (year in 1:(burnInYears+treatmentYears+afterYears)) {
-      if (year > burnInYears && year <= (burnInYears+treatmentYears)) {
-        if (suppression>0) {inds <- suppress(inds,suppression)}
-        inds <- stockYY(inds,Myy,Fyy)
-      }
       
       if (nrow(subset(inds, sex == 1 & yy == 0)) == 0) {
         yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=1,Years=year-burnInYears,MinFemales=0)
@@ -137,6 +133,11 @@ simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
         numFxx <- append(numFxx, 0)
         eliminationYear <- year
         break
+      }
+      
+      if (year > burnInYears && year <= (burnInYears+treatmentYears)) {
+        if (suppression>0) {inds <- suppress(inds,suppression)}
+        inds <- stockYY(inds,Myy,Fyy)
       }
   
       inds <- death(inds,survival)
@@ -154,10 +155,13 @@ simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
     if(eliminationYear == 0) {yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=0,Years=NA,MinFemales=min(tail(numFxx,(treatmentYears+afterYears)))); results <- rbind(results, yearResults)}
     
     if (is.element(y, plotYears)) {
-      plot(Year, Population, type='l', main=(ifelse(eliminationYear == 0, (paste("Run", y, "- Not Extirpated. Min. Females:", min(tail(numFxx,(treatmentYears+afterYears))))), (paste("Run", y, "-", (eliminationYear-burnInYears), "years to extirpation")))), ylim=c(0,max(Population)))
+      plot(Year, Population, type='l', xaxt="none", xlab = "",ylab="",main=(ifelse(eliminationYear == 0, (paste("Run", y, "- Not Extirpated. Min. Females:", min(tail(numFxx,(treatmentYears+afterYears))))), (paste("Run", y, "-", (eliminationYear-burnInYears), "years to extirpation")))), ylim=c(0,max(Population)))
+      title(ylab = "Population", mgp = c(3, 1, 0))  
+      title(xlab = "Year", mgp = c(2.5, 2, 0))
+      axis(1,mgp = c(4, 1, 0))
       lines(Year, numFxx, type='l', col="red")
-      abline(v=burnInYears, col="red")
-      abline(v=burnInYears+treatmentYears, col="red")
+      abline(v=burnInYears, col="black",lty=2)
+      abline(v=burnInYears+treatmentYears, col="black",lty=2)
     }
   }
   results
