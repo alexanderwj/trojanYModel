@@ -9,8 +9,9 @@ lInf <- 726.7
 rate <- .1437
 tZero <- -.04422
 
-#annual mortality rate A for wild fish: calculated using catch-curve analysis of WNRD snorkel surveys
-wildMortality <- 0.57873786895
+#annual mortality rate A for wild fish: calculated using weighted catch-curve analysis of WNRD snorkel surveys
+#wildMortality <- 0.57873786895
+wildMortality <- .605741101
 
 # Simulation begins with age-2 fish, sex is randomly chosen
 startingFish <- 1000
@@ -55,7 +56,7 @@ birth <- function(inds,K) {
     return(inds)
   }
   spawners <- totalPairs*2
-  newFish <- ((20*K*spawners)/(K+(19*spawners)))*exp(rnorm(1,0,0.25))
+  newFish <- ((20*K*spawners)/(K+(19*spawners)))*exp(rnorm(1,0,0.2))
   if (newFish <= 0) {
      return(inds)
   }
@@ -160,8 +161,8 @@ simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
       title(xlab = "Year", mgp = c(2.5, 2, 0))
       axis(1,mgp = c(4, 1, 0))
       lines(Year, numFxx, type='l', col="red")
-      abline(v=burnInYears, col="black",lty=2)
-      abline(v=burnInYears+treatmentYears, col="black",lty=2)
+      abline(v=burnInYears, col="black",lty=2,lwd=2)
+      abline(v=burnInYears+treatmentYears, col="black",lty=2,lwd=2)
     }
   }
   results

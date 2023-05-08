@@ -8,7 +8,7 @@ source("DraftModelRework.R")
 K <- 10000
 
 #YY fish are stocked annually at age 1 during the summer field season
-numMyy <- 350
+numMyy <- 200
 numFyy <- 0
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
@@ -24,8 +24,8 @@ suppressionLevel <- 0
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females,
 #   verticals red lines = management actions start/stop
-numSimulations <- 1
-numPlots <- 1
+numSimulations <- 5
+numPlots <- 5
 
 #simulation----
 
