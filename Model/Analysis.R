@@ -1,5 +1,6 @@
 library(ggplot2)
 library(dplyr)
+setwd(getSrcDirectory(function(){})[1])
 source("DraftModelRework.R")
 
 #parameters----
@@ -8,7 +9,7 @@ source("DraftModelRework.R")
 K <- 10000
 
 #YY fish are stocked annually at age 1 during the summer field season
-numMyy <- 200
+numMyy <- 1000
 numFyy <- 0
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
@@ -24,8 +25,8 @@ suppressionLevel <- 0
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females,
 #   verticals red lines = management actions start/stop
-numSimulations <- 5
-numPlots <- 5
+numSimulations <- 3
+numPlots <- 3
 
 #simulation----
 
