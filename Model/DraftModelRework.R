@@ -28,7 +28,7 @@ startingFish <- 1000
 # Treatment years are when YY fish are stocked and suppression is applied, if applicable
 burnInYears <- 50
 treatmentYears <- 100
-afterYears <- 25
+afterYears <- 50
 
 #component functions----
 
@@ -152,6 +152,21 @@ immigration <- function(inds,num,size) {
   inds
 }
 
+emigration <- function(inds,num,size) {
+  fish <- inds[sample(nrow(inds),num),]
+  fish <- subset(fish,length<size)
+  
+  while (nrow(fish) < num) {
+    fishes <- inds[sample(nrow(inds),num),]
+    fishes <- subset(fishes,length<size)
+    fish <- unique(rbind(fish,fishes))
+  }
+  
+  fish <- head(fish,num)
+  inds <- inds[!(row.names(inds) %in% row.names(fish)),]
+  inds
+}
+
 #simulation function----
 
 simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
@@ -184,6 +199,8 @@ simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
       inds <- growth(inds)
       inds <- maturity(inds)
       inds <- birth(inds,K)
+      inds <- immigration(inds,500,300)
+      inds <- emigration(inds,500,300)
       
       Population <- append(Population, nrow(inds))
       numFxx <- append(numFxx, nrow(subset(inds, sex == 1 & yy == 0)))

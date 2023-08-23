@@ -9,7 +9,7 @@ source("DraftModelRework.R")
 K <- 10000
 
 #YY fish are stocked annually at age 1 during the summer field season
-numMyy <- 1000
+numMyy <- 5000
 numFyy <- 0
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
