@@ -1,21 +1,21 @@
 #parameters----
 
-#maturity parameters: derived from prespawn fish collected from the SFER 5/4/23-7/12/23
+#maturity parameters: from prespawn fish collected from the SFER 5/4/23-7/12/23
 lm50.F <- 354.6462
 lm95.F <- 417.5757
 lm50.M <- 215.6787
 lm95.M <- 282.6869
 
 #Von Bert parameters: these are from aged scales collected by WNRD in 2019 and 2022
-lInf.F <- 718.0129914
-rate.F <- 0.1594619
-tZero.F <- 0.1270705
+lInf.F <- 625
+rate.F <- 0.249
+tZero.F <- 0.397
 lInf.M <- 450
 rate.M <- 0.279
 tZero.M <- 0.1270705
 
-#annual mortality rate A for wild fish: calculated using weighted catch-curve analysis of 2022 electrofishing catch
-Z <- 0.726121
+#annual mortality rate A for wild fish: calculated using weighted catch-curve analysis of 2023 electrofishing catch
+Z <- 0.756121
 wildMortality <- 1-exp(-Z)
 
 #suppression selectivity parameters
@@ -169,7 +169,7 @@ emigration <- function(inds,num,size) {
 
 #simulation function----
 
-simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
+simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
   plotYears <- sample.int(simulations, plots)
   results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
   
@@ -199,8 +199,8 @@ simulate <- function(K,Myy,Fyy,survival,suppression,simulations,plots) {
       inds <- growth(inds)
       inds <- maturity(inds)
       inds <- birth(inds,K)
-      inds <- immigration(inds,500,300)
-      inds <- emigration(inds,500,300)
+      inds <- immigration(inds,movers,cutoffSize)
+      inds <- emigration(inds,movers,cutoffSize)
       
       Population <- append(Population, nrow(inds))
       numFxx <- append(numFxx, nrow(subset(inds, sex == 1 & yy == 0)))
