@@ -1,29 +1,29 @@
 #parameters----
 
-#maturity parameters: from prespawn fish collected from the SFER 5/4/23-7/12/23
+#maturity parameters: from prespawn/spawning fish collected from the SFER 5/4/23-7/12/23
 lm50.F <- 354.6462
 lm95.F <- 417.5757
 lm50.M <- 215.6787
 lm95.M <- 282.6869
 
 #Von Bert parameters: these are from aged scales collected by WNRD in 2019 and 2022
-lInf.F <- 625
-rate.F <- 0.249
-tZero.F <- 0.397
-lInf.M <- 450
-rate.M <- 0.279
-tZero.M <- 0.1270705
+lInf.F <- 633.24559946
+rate.F <- 0.22183245
+tZero.F <- -0.08270817
+lInf.M <- 329.1883924
+rate.M <- 0.6108723
+tZero.M <- 0.1406984
 
 #annual mortality rate A for wild fish: calculated using weighted catch-curve analysis of 2023 electrofishing catch
-Z <- 0.756121
+Z <- 0.9627369
 wildMortality <- 1-exp(-Z)
 
 #suppression selectivity parameters
-s50 <- 385.1411
-s95 <- 420.4009
+s50 <- 409.6708
+s95 <- 472.3170
 
 # Simulation begins with age-2 fish, sex is randomly chosen
-startingFish <- 1000
+startingFish <- 2000
 
 # Treatment years are when YY fish are stocked and suppression is applied, if applicable
 burnInYears <- 50
@@ -65,7 +65,7 @@ birth <- function(inds,K) {
     return(inds)
   }
   spawners <- totalPairs*2
-  newFish <- ((20*K*spawners)/(K+(19*spawners)))*exp(rnorm(1,0,0.2))
+  newFish <- ((59*K*spawners)/(K+(58*spawners)))*exp(rnorm(1,0,0.2))
   if (newFish <= 0) {
     return(inds)
   }
@@ -199,8 +199,11 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
       inds <- growth(inds)
       inds <- maturity(inds)
       inds <- birth(inds,K)
-      inds <- immigration(inds,movers,cutoffSize)
-      inds <- emigration(inds,movers,cutoffSize)
+      
+      if (movers>0) {
+        inds <- immigration(inds,movers,cutoffSize)
+        inds <- emigration(inds,movers,cutoffSize)
+      }
       
       Population <- append(Population, nrow(inds))
       numFxx <- append(numFxx, nrow(subset(inds, sex == 1 & yy == 0)))

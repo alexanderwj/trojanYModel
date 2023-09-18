@@ -6,14 +6,14 @@ source("DraftModelRework.R")
 #parameters----
 
 # K is implemented using the Beverton-Holt difference equation (Bohner and Chieochan 2013)
-K <- 50000
+K <- 40000
 
 #YY fish are stocked annually at age 1 during the summer field season
-numMyy <- 3000
-numFyy <- 500
+numMyy <- 0
+numFyy <- 1000
 
 #Movement: how many fish leave/enter the area each year, and what size must they be below?
-movingFish <- 500
+movingFish <- 100
 cutoffSize <- 300
 
 # YY survival is calculated as a proportion of wild pikeminnow survival
@@ -24,7 +24,7 @@ yyRelSurvival <- 1
 # Level is a multiplier of the selectivity function (2022 estimate: 0.18)
 #   A level of 1 means the most-selected lengths have a 100% chance of being suppressed
 # Stocked fish cannot be suppressed
-suppressionLevel <- 0.5
+suppressionLevel <- 0
 
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females,
@@ -39,4 +39,4 @@ numPlots <- 1
 
 #results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
 
-print(simulate(K,numMyy,numFyy,yyRelSurvival,movingFish,suppressionLevel,numSimulations,numPlots))
+results <- (simulate(K,numMyy,numFyy,yyRelSurvival,movingFish,suppressionLevel,numSimulations,numPlots))
