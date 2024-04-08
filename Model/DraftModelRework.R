@@ -1,29 +1,36 @@
 #parameters----
 
 #maturity parameters: from prespawn/spawning fish collected from the SFER 5/4/23-7/12/23
-lm50.F <- 354.6462
-lm95.F <- 417.5757
-lm50.M <- 215.6787
-lm95.M <- 282.6869
+b0.F <- -17.47307
+b1.F <- 0.04949
+b0.M <- -8.14029
+b1.M <- 0.03789
 
 #Von Bert parameters: these are from aged scales collected by WNRD in 2019 and 2022
-lInf.F <- 633.24559946
-rate.F <- 0.22183245
-tZero.F <- -0.08270817
-lInf.M <- 329.1883924
-rate.M <- 0.6108723
-tZero.M <- 0.1406984
+lInf.F <- 597.13281136
+rate.F <- 0.23430774
+tZero.F <- -0.09127991
+sigma.F <- 50.82
+lInf.M <- 340.79797831
+rate.M <- 0.47953492
+tZero.M <- -0.03931952
+sigma.M <- 30.42
+
+#recruitment parameters: inherent growth rate and maximum recruitment as a multiplier of k.
+r <- 50
+k.mult <- 1.025638
 
 #annual mortality rate A for wild fish: calculated using weighted catch-curve analysis of 2023 electrofishing catch
-Z <- 0.9627369
+Z <- 0.9339988
 wildMortality <- 1-exp(-Z)
 
 #suppression selectivity parameters
-s50 <- 409.6708
-s95 <- 472.3170
+s50 <- 417.8510
+s95 <- 462.6664
 
 # Simulation begins with age-2 fish, sex is randomly chosen
-startingFish <- 2000
+startingFish <- 1000
+stockedAge <- 1
 
 # Treatment years are when YY fish are stocked and suppression is applied, if applicable
 burnInYears <- 50
@@ -35,7 +42,7 @@ afterYears <- 50
 maturity <- function(inds) {
   lengths <- inds$length
   numFish <- length(lengths)
-  probMature <- ifelse(inds$sex==1,(1/(1+exp(log(19)*(lengths-lm50.F)/(lm50.F-lm95.F)))),(1/(1+exp(log(19)*(lengths-lm50.M)/(lm50.M-lm95.M)))))
+  probMature <- ifelse(inds$sex==1,(exp(b0.F+(b1.F*lengths))/(1+exp(b0.F+(b1.F*lengths)))),(exp(b0.M+(b1.M*lengths))/(1+exp(b0.M+(b1.M*lengths)))))
   inds$mature<-rbinom(numFish, 1, probMature)
   inds
 }
@@ -43,7 +50,7 @@ maturity <- function(inds) {
 growth <- function(inds) {
   inds$age <- inds$age+1
   numFish <- length(inds$age)
-  inds$length <- ifelse(inds$sex == 0, lInf.M*(1-exp(-rate.M*(inds$age-tZero.M)))+rnorm(numFish, 0, 40), lInf.F*(1-exp(-rate.F*(inds$age-tZero.F)))+rnorm(numFish, 0, 40))
+  inds$length <- ifelse(inds$sex==0, lInf.M*(1-exp(-rate.M*(inds$age-tZero.M)))+rnorm(numFish, 0, sigma.M), lInf.F*(1-exp(-rate.F*(inds$age-tZero.F)))+rnorm(numFish, 0, sigma.F))
   inds
 }
 
@@ -64,19 +71,24 @@ birth <- function(inds,K) {
   if (totalPairs == 0) {
     return(inds)
   }
-  spawners <- totalPairs*2
-  newFish <- ((59*K*spawners)/(K+(58*spawners)))*exp(rnorm(1,0,0.2))
-  if (newFish <= 0) {
+  spawners <- totalPairs
+  newFish <- ifelse(spawners<79.63529,50*spawners,50*79.63529)*exp(rnorm(1,0,0.4))
+  if (newFish == 0) {
     return(inds)
   }
   
   percMyy <- ifelse((matureMyy+matureMxy)==0,0,matureMyy/(matureMyy+matureMxy))
   percFyy <- ifelse((matureFyy+matureFxx)==0,0,matureFyy/(matureFyy+matureFxx))
+  pBothyy <- percMyy*percFyy
+  pWild <- (1-percFyy)*(1-percMyy)
+  pFxxMyy <- (1-percFyy)*percMyy
+  pFyyMxy <- (1-percMyy)*percFyy
+  pGen <- runif(totalPairs)
   
-  pairsBothyy <- rbinom(1,totalPairs,percMyy*percFyy)
-  pairsWild <- rbinom(1,totalPairs,(1-percFyy)*(1-percMyy))
-  pairsFxxMyy <- rbinom(1,(totalPairs-pairsBothyy-pairsWild),(percMyy))
-  pairsFyyMxy <- (totalPairs-pairsBothyy-pairsFxxMyy-pairsWild)
+  pairsBothyy <- sum(pGen<pBothyy)
+  pairsWild <- sum(pGen>pBothyy & pGen<pBothyy+pWild)
+  pairsFxxMyy <- sum(pGen>pBothyy+pWild & pGen<pBothyy+pWild+pFxxMyy)
+  pairsFyyMxy <- sum(pGen>pBothyy+pWild+pFxxMyy & pGen<=1)
   
   recruitsBothyy <- round((newFish*(pairsBothyy/totalPairs)), 0)
   recruitsFxxMyy <- round((newFish*(pairsFxxMyy/totalPairs)), 0)
@@ -106,15 +118,17 @@ birth <- function(inds,K) {
 }
 
 stockYY <- function(inds,Myy,Fyy){
-  if (Myy > 0) {new_Myy <- data.frame(age=rep(1, Myy), sex=0, length=0, mature=0, dead=0, yy=1, stocked=1); inds <- rbind(inds, new_Myy)}
-  if (Fyy > 0) {new_Fyy <- data.frame(age=rep(1, Fyy), sex=1, length=0, mature=0, dead=0, yy=1, stocked=1); inds <- rbind(inds, new_Fyy)}
+  if (Myy > 0 & stockedAge < 2) {new_Myy <- data.frame(age=rep(stockedAge, Myy), sex=0, length=0, mature=0, dead=0, yy=1, stocked=1); inds <- rbind(inds, new_Myy)}
+  if (Fyy > 0 & stockedAge < 2) {new_Fyy <- data.frame(age=rep(stockedAge, Fyy), sex=1, length=0, mature=0, dead=0, yy=1, stocked=1); inds <- rbind(inds, new_Fyy)}
+  if (Myy > 0 & stockedAge >= 2) {new_Myy <- data.frame(age=rep(stockedAge, Myy), sex=0, length=(lInf.M*(1-exp(-rate.M*(stockedAge-tZero.M)))+rnorm(Myy, 0, sigma.M)), mature=(1/(1+exp(log(19)*((lInf.M*(1-exp(-rate.M*(stockedAge-tZero.M))))-lm50.M)/(lm50.M-lm95.M)))), dead=0, yy=1, stocked=1); inds <- rbind(inds, new_Myy)}
+  if (Fyy > 0 & stockedAge >= 2) {new_Fyy <- data.frame(age=rep(stockedAge, Fyy), sex=1, length=(lInf.F*(1-exp(-rate.F*(stockedAge-tZero.F)))+rnorm(Fyy, 0, sigma.F)), mature=(1/(1+exp(log(19)*((lInf.F*(1-exp(-rate.F*(stockedAge-tZero.F))))-lm50.F)/(lm50.F-lm95.F)))), dead=0, yy=1, stocked=1); inds <- rbind(inds, new_Fyy)}
   inds
 }
 
 suppress <-function(inds,rate) {
   lengths <- inds$length
   numFish <- length(lengths)
-  suppressProb <-  (1/(1+exp(log(19)*(lengths-s50)/(s50-s95))))
+  suppressProb <- ifelse(lengths>240,(((1/(1+exp(log(19)*(lengths-s50)/(s50-s95))))*(1-0.1006185))+0.1006185),0)
   suppressProb <- suppressProb*rate
   inds$dead <- ifelse(inds$stocked==1, 0, rbinom(numFish, 1, suppressProb))
   inds <- subset(inds, dead==0)
@@ -122,31 +136,41 @@ suppress <-function(inds,rate) {
 }
 
 immigration <- function(inds,num,size) {
-  ageM <- tZero.M-(log(1-size/lInf.M)/rate.M)
-  ageF <- tZero.F-(log(1-size/lInf.F)/rate.F)
-  mortM <- 10000-(10000*exp(-Z*ageM))
-  mortF <- 10000-(10000*exp(-Z*ageF))
-  numM <- round(num*(mortM/(mortM+mortF)),0)
-  numF <- round(num*(mortF/(mortM+mortF)),0)
-  
-  vecM <- c()
-  vecF <- c()
-  while(length(vecM)<numM) {
-    tvec <- rexp(numM*10,rate=Z)
-    tvec <- tvec[tvec<=ageM]
-    vecM <- append(vecM,tvec)
+  if (size>lInf.F) {
+    vecM <- rexp(round(num/2),rate=Z)
+    vecF <- rexp(round(num/2),rate=Z)
+    lengthsM <- lInf.M*(1-exp(-rate.M*(vecM-tZero.M)))
+    lengthsF <- lInf.F*(1-exp(-rate.F*(vecF-tZero.F)))
+    newFish_M <- data.frame(age=vecM, sex=rep(0,round(num/2)), length=lengthsM, mature=rbinom(round(num/2),1,exp(b0.M+(b1.M*lengthsM))/(1+exp(b0.M+(b1.M*lengthsM)))), dead=0, yy=0, stocked=0)
+    newFish_F <- data.frame(age=vecF, sex=rep(1,round(num/2)), length=lengthsF, mature=rbinom(round(num/2),1,exp(b0.F+(b1.F*lengthsF))/(1+exp(b0.F+(b1.F*lengthsF)))), dead=0, yy=0, stocked=0)
+  } else {
+    ifelse(size>lInf.M,ageM <- 100,ageM <- tZero.M-(log(1-size/lInf.M)/rate.M))
+    ageF <- tZero.F-(log(1-size/lInf.F)/rate.F)
+    mortM <- 10000-(10000*exp(-Z*ageM))
+    mortF <- 10000-(10000*exp(-Z*ageF))
+    numM <- round(num*(mortM/(mortM+mortF)),0)
+    numF <- round(num*(mortF/(mortM+mortF)),0)
+    
+    vecM <- c()
+    vecF <- c()
+    while(length(vecM)<numM) {
+      tvec <- rexp(numM*10,rate=Z)
+      tvec <- tvec[tvec<=ageM]
+      vecM <- append(vecM,tvec)
+    }
+    while(length(vecF)<numF) {
+      tvec <- rexp(numF*10,rate=Z)
+      tvec <- tvec[tvec<=ageF]
+      vecF <- append(vecF,tvec)
+    }
+    
+    lengthsM <- lInf.M*(1-exp(-rate.M*(vecM[0:numM]-tZero.M)))
+    lengthsF <- lInf.F*(1-exp(-rate.F*(vecF[0:numF]-tZero.F)))
+    
+    newFish_M <- data.frame(age=vecM[0:numM], sex=rep(0,numM), length=lengthsM, mature=rbinom(round(num/2),1,exp(b0.M+(b1.M*lengthsM))/(1+exp(b0.M+(b1.M*lengthsM)))), dead=0, yy=0, stocked=0)
+    newFish_F <- data.frame(age=vecF[0:numF], sex=rep(1,numF), length=lengthsF, mature=rbinom(round(num/2),1,exp(b0.F+(b1.F*lengthsF))/(1+exp(b0.F+(b1.F*lengthsF)))), dead=0, yy=0, stocked=0)
   }
-  while(length(vecF)<numF) {
-    tvec <- rexp(numF*10,rate=Z)
-    tvec <- tvec[tvec<=ageF]
-    vecF <- append(vecF,tvec)
-  }
-  
-  lengthsM <- lInf.M*(1-exp(-rate.M*(vecM[0:numM]-tZero.M)))
-  lengthsF <- lInf.F*(1-exp(-rate.F*(vecF[0:numF]-tZero.F)))
-  
-  newFish_M <- data.frame(age=vecM[0:numM], sex=rep(0,numM), length=lengthsM, mature=rbinom(numM,1,(1/(1+exp(log(19)*(lengthsM-lm50.M)/(lm50.M-lm95.M))))), dead=0, yy=0, stocked=0)
-  newFish_F <- data.frame(age=vecF[0:numF], sex=rep(1,numF), length=lengthsF, mature=rbinom(numF,1,(1/(1+exp(log(19)*(lengthsF-lm50.F)/(lm50.F-lm95.F))))), dead=0, yy=0, stocked=0)
+
   inds <- rbind(inds, newFish_M);
   inds <- rbind(inds, newFish_F);
   inds
@@ -171,7 +195,7 @@ emigration <- function(inds,num,size) {
 
 simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
   plotYears <- sample.int(simulations, plots)
-  results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
+  results <- data.frame(matrix(ncol=10,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales","EndPop", "MovingFish"))))
   
   for (y in 1:simulations) {
     inds <- data.frame(age=rep(3, startingFish), sex=rbinom(startingFish,1,0.5), length=0, mature=0, dead=0, yy=0, stocked=0)
@@ -182,7 +206,7 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
     for (year in 1:(burnInYears+treatmentYears+afterYears)) {
       
       if (nrow(subset(inds, sex == 1 & yy == 0)) == 0) {
-        yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=1,Years=year-burnInYears,MinFemales=0)
+        yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=1,Years=year-burnInYears,MinFemales=0,EndPop=NA, MovingFish=movers)
         results <- rbind(results, yearResults)
         Population <- append(Population, nrow(inds))
         numFxx <- append(numFxx, 0)
@@ -201,8 +225,8 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
       inds <- birth(inds,K)
       
       if (movers>0) {
-        inds <- immigration(inds,movers,cutoffSize)
-        inds <- emigration(inds,movers,cutoffSize)
+        inds <- immigration(inds,movers,999)
+        inds <- emigration(inds,movers,999)
       }
       
       Population <- append(Population, nrow(inds))
@@ -212,7 +236,7 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
     Year <- 0:(burnInYears+treatmentYears+afterYears)
     Year <- (head(Year,(length(Population))))
     numFxx <- (head(numFxx,(length(Population))))
-    if(eliminationYear == 0) {yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=0,Years=NA,MinFemales=min(tail(numFxx,(treatmentYears+afterYears)))); results <- rbind(results, yearResults)}
+    if(eliminationYear == 0) {yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=0,Years=NA,MinFemales=min(tail(numFxx,(treatmentYears+afterYears))),EndPop=Population[burnInYears+treatmentYears],MovingFish=movers); results <- rbind(results, yearResults)}
 
     if (is.element(y, plotYears)) {
       plot(Year, Population, type='l', xaxt="none", xlab = "",ylab="",main=(ifelse(eliminationYear == 0, (paste("Run", y, "- Not Extirpated. Min. Females:", min(tail(numFxx,(treatmentYears+afterYears))))), (paste("Run", y, "-", (eliminationYear-burnInYears), "years to extirpation")))), ylim=c(0,max(Population)))
@@ -224,5 +248,5 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
       abline(v=burnInYears+treatmentYears, col="black",lty=2,lwd=2)
     }
   }
-  results
+  inds
 }
