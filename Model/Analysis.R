@@ -29,8 +29,8 @@ suppressionLevel <- 0
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females,
 #   verticals dashed lines = management actions start/stop
-numSimulations <- 10
-numPlots <- 10
+numSimulations <- 5
+numPlots <- 5
 
 #simulation----
 
@@ -42,7 +42,7 @@ numPlots <- 10
 
 #results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
 
-inds <- (simulate(K,numMyy,numFyy,yyRelSurvival,movingFish,suppressionLevel,numSimulations,numPlots))
+results <- (simulate(K,numMyy,numFyy,yyRelSurvival,movingFish,suppressionLevel,numSimulations,numPlots))
 
 # vec1 <- c(0.7,0.75,0.8,0.9,1)
 # vec2 <- c(0.5,0.6,0.7,0.75,0.8,0.9,1)

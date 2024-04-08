@@ -16,9 +16,9 @@ rate.M <- 0.47953492
 tZero.M <- -0.03931952
 sigma.M <- 30.42
 
-#recruitment parameters: inherent growth rate and maximum recruitment as a multiplier of k.
-r <- 50
-k.mult <- 1.025638
+#recruitment parameters: productivity and critical spawner level (crit.lev pre scaled to produce carrying capacity of 6643)
+prod <- 50; crit.lev <- 79.63529
+#prod <- 250; crit.lev <- 15.74917
 
 #annual mortality rate A for wild fish: calculated using weighted catch-curve analysis of 2023 electrofishing catch
 Z <- 0.9339988
@@ -72,7 +72,7 @@ birth <- function(inds,K) {
     return(inds)
   }
   spawners <- totalPairs
-  newFish <- ifelse(spawners<79.63529,50*spawners,50*79.63529)*exp(rnorm(1,0,0.4))
+  newFish <- ifelse(spawners<crit.lev,prod*spawners,prod*crit.lev)*exp(rnorm(1,0,0.4))
   if (newFish == 0) {
     return(inds)
   }
