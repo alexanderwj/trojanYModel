@@ -40,32 +40,50 @@ numPlots <- 5
 
 #print(results <- (simulate(K,numMyy,numFyy,yyRelSurvival,movingFish,suppressionLevel,numSimulations,numPlots)))
 
-#results <- data.frame(matrix(ncol=8,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales"))))
+results <- data.frame(matrix(ncol=11,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales","EndPop","EndBiomass","MovingFish"))))
 
-results <- (simulate(K,numMyy,numFyy,yyRelSurvival,movingFish,suppressionLevel,numSimulations,numPlots))
+#results <- (simulate(K,numMyy,numFyy,yyRelSurvival,movingFish,suppressionLevel,numSimulations,numPlots))
 
-# vec1 <- c(0.7,0.75,0.8,0.9,1)
-# vec2 <- c(0.5,0.6,0.7,0.75,0.8,0.9,1)
-# vec3 <- c(0.6,0.7,0.8,0.9,1)
-# vec4 <- 6643*seq(0.0125,1,0.0125)
-# vec5 <- c(seq(0,1,0.0125))
-# 
-# for (i in 1:length(vec4)) {
-#   results <- (simulate(6643,round(6643*vec4[i],0),0,1,0,0,1000,50))
-#   write.csv(results,paste("base_hs_lp_",as.integer(vec4[i]*100),"k.csv",sep=''))
-#   print(vec4[i])
-# }
-# 
-# results <- data.frame()
-# for (i in 1:length(vec4)) {
-#   for (j in 1:length(vec5)) {
-#     tresults <- (simulate(6643,round(vec4[i]*vec5[j],0),round(vec4[i]*(1-vec5[j]),0),1,0,0,10,1))
+inds <- (simulate(K,0,0,1,0,0,1,1))
+
+vec1 <- c(0.4,0.6,0.8,1)
+vec2 <- seq(0.1,1,0.1)
+
+
+results <- (simulate(66430,13286,0,1,0,0,200,50))
+write.csv(results,"base_lp_0.2k_200.csv")
+#write.csv(results,"base_lp.csv")
+results <- data.frame(matrix(ncol=11,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales","EndPop","EndBiomass","MovingFish"))))
+for (i in 1:length(vec1)) {
+  print(round(6643*vec1[i],0))
+  tresults <- (simulate(6643,round(6643*vec1[i],0),0,1,0,0,1000,50))
+  results <- rbind(results,tresults)
+}
+write.csv(results,paste("base_hs_lp_sr2.csv",sep=''))
+
+
+
+# for (i in 1:length(vec1)) {
+#   for (j in 1:length(vec2)) {
+#     tresults <- (simulate(6643,round(6643*vec2[j],0),0,1,round(6643*vec1[i],0),0,5,1))
 #     results <- rbind(results,tresults)
-#     print(c(vec4[i],round(vec4[i]*vec5[j],0),round(vec4[i]*(1-vec5[j]))))
+#     print(paste("Stocked: ",round(vec2[j]*6643,0),", Moving: ",round(vec1[i]*6643,0),sep=''))
 #   }
 # }
-# write.csv(results,paste("base_hs_hp_k_sr_low.csv",sep=''))
+# write.csv(results,paste("base_hs_lp_pctK_movement_allM3.csv",sep=''))
+# results <- data.frame(matrix(ncol=11,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales","EndPop","EndBiomass","MovingFish"))))
+# for (i in 1:length(vec1)) {
+#   for (j in 1:length(vec2)) {
+#     tresults <- (simulate(6643,round(6643*vec2[j]/2,0),round(6643*vec2[j]/2,0),1,round(6643*vec1[i],0),0,5,1))
+#     results <- rbind(results,tresults)
+#     print(paste("Stocked: ",round(vec2[j]*6643,0),", Moving: ",round(vec1[i]*6643,0),sep=''))
+#   }
+# }
+# write.csv(results,paste("base_hs_lp_pctK_movement_half3.csv",sep=''))
+
 # 
+# results <- data.frame()
+
 # for (i in 1:length(vec5)) {
 #   tresults <- (simulate(6643,round(6643*vec5[i],0),0,1,0,0,10,1))
 #   results <- rbind(results,tresults)

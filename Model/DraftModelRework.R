@@ -1,28 +1,28 @@
 #parameters----
 
 #maturity parameters: from prespawn/spawning fish collected from the SFER 5/4/23-7/12/23
-b0.F <- -17.47307
-b1.F <- 0.04949
-b0.M <- -8.14029
-b1.M <- 0.03789
+b0.F <- -17.767447
+b1.F <- 0.049971
+b0.M <- -14.58834
+b1.M <- 0.06888
 
 #Von Bert parameters: these are from aged scales collected by WNRD in 2019 and 2022
-lInf.F <- 597.13281136
-rate.F <- 0.23430774
-tZero.F <- -0.09127991
-sigma.F <- 50.82
-lInf.M <- 340.79797831
-rate.M <- 0.47953492
-tZero.M <- -0.03931952
-sigma.M <- 30.42
+lInf.F <- 598.02281
+rate.F <- 0.23366
+tZero.F <- -0.08817
+sigma.F <- 50.71
+lInf.M <- 339.84491
+rate.M <- 0.48474
+tZero.M <- -0.03253
+sigma.M <- 30.68
 
 #recruitment parameters: productivity and critical spawner level (crit.lev pre scaled to produce carrying capacity of 6643)
-prod <- 50; crit.lev <- 79.63529
-#prod <- 250; crit.lev <- 15.74917
+prod <- 50; crit.lev <- 652.2392
+#prod <- 250; crit.lev <- 13.09533
 
-#annual mortality rate A for wild fish: calculated using weighted catch-curve analysis of 2023 electrofishing catch
-Z <- 0.9339988
-wildMortality <- 1-exp(-Z)
+#annual mortality rate A for wild fish: calculated using Chapman-Robsin method on electrofishing catch
+wildMortality <- .536886
+Z <- -log(1-wildMortality)
 
 #suppression selectivity parameters
 s50 <- 417.8510
@@ -35,7 +35,7 @@ stockedAge <- 1
 # Treatment years are when YY fish are stocked and suppression is applied, if applicable
 burnInYears <- 50
 treatmentYears <- 100
-afterYears <- 50
+afterYears <- 25
 
 #component functions----
 
@@ -195,7 +195,7 @@ emigration <- function(inds,num,size) {
 
 simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
   plotYears <- sample.int(simulations, plots)
-  results <- data.frame(matrix(ncol=10,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales","EndPop", "MovingFish"))))
+  results <- data.frame(matrix(ncol=11,nrow=0, dimnames=list(NULL, c("K", "Myy", "Fyy", "YYSurvival", "SuppressionLevel", "Eliminated", "Years", "MinFemales","EndPop", "EndBiomass", "MovingFish"))))
   
   for (y in 1:simulations) {
     inds <- data.frame(age=rep(3, startingFish), sex=rbinom(startingFish,1,0.5), length=0, mature=0, dead=0, yy=0, stocked=0)
@@ -206,7 +206,7 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
     for (year in 1:(burnInYears+treatmentYears+afterYears)) {
       
       if (nrow(subset(inds, sex == 1 & yy == 0)) == 0) {
-        yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=1,Years=year-burnInYears,MinFemales=0,EndPop=NA, MovingFish=movers)
+        yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=1,Years=year-burnInYears,MinFemales=0,EndPop=NA,EndBiomass=NA,MovingFish=movers)
         results <- rbind(results, yearResults)
         Population <- append(Population, nrow(inds))
         numFxx <- append(numFxx, 0)
@@ -229,6 +229,10 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
         inds <- emigration(inds,movers,999)
       }
       
+      if (year==(burnInYears+treatmentYears)) {
+        endBM <- sum(((-6.0913+0.9387*inds$length^2.842)*0.00003)/1000,na.rm=T)
+      }
+      
       Population <- append(Population, nrow(inds))
       numFxx <- append(numFxx, nrow(subset(inds, sex == 1 & yy == 0)))
     }
@@ -236,7 +240,7 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
     Year <- 0:(burnInYears+treatmentYears+afterYears)
     Year <- (head(Year,(length(Population))))
     numFxx <- (head(numFxx,(length(Population))))
-    if(eliminationYear == 0) {yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=0,Years=NA,MinFemales=min(tail(numFxx,(treatmentYears+afterYears))),EndPop=Population[burnInYears+treatmentYears],MovingFish=movers); results <- rbind(results, yearResults)}
+    if(eliminationYear == 0) {yearResults <- data.frame(K=K,Myy=Myy,Fyy=Fyy,YYSurvival=survival,SuppressionLevel=suppression,Eliminated=0,Years=NA,MinFemales=min(tail(numFxx,(treatmentYears+afterYears))),EndPop=Population[burnInYears+treatmentYears],EndBiomass=endBM,MovingFish=movers); results <- rbind(results, yearResults)}
 
     if (is.element(y, plotYears)) {
       plot(Year, Population, type='l', xaxt="none", xlab = "",ylab="",main=(ifelse(eliminationYear == 0, (paste("Run", y, "- Not Extirpated. Min. Females:", min(tail(numFxx,(treatmentYears+afterYears))))), (paste("Run", y, "-", (eliminationYear-burnInYears), "years to extirpation")))), ylim=c(0,max(Population)))
@@ -248,5 +252,5 @@ simulate <- function(K,Myy,Fyy,survival,movers,suppression,simulations,plots) {
       abline(v=burnInYears+treatmentYears, col="black",lty=2,lwd=2)
     }
   }
-  inds
+  results
 }
