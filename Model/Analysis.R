@@ -24,13 +24,13 @@ cutoffSize <- 999
 yyRelSurvival <- 1
 
 #Age of stocked YY fish
-suppressionLevel <- 0
+stockedAge <- 0
 
 # Suppression is size-selective based on WNRD 2022 efforts
 # Level is a multiplier of the selectivity function (2022 estimate: 0.18)
 #   A level of 1 means the most-selected lengths have a 100% chance of being suppressed
 # Stocked fish cannot be suppressed
-stockedAge <- 0
+suppressionLevel <- 0
 
 # Choose how many simulations will be run and how many will be plotted
 # On the plots, black line = total population, red line = wild-type females,
